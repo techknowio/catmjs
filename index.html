@@ -207,7 +207,25 @@
 
     </script>
     <title>Coin ATM</title>
+    <link rel="stylesheet" href="fonts/css/hack.min.css">
     <style>
+        html {
+            background:#000 url(images/background.png);
+            background-size:cover;
+        }
+        body {
+            font-family: Hack, monospace;
+            text-transform:uppercase;
+            color:#FFF;
+        }
+        h1 {
+            font-size: 1.4em;
+            margin:15px auto 0px auto;
+            text-align: center;
+            font-weight: normal;
+            padding: 0;
+            text-transform:uppercase;
+        }
         #container{width:100%;}
         #left{float:left;width:200px;}
         #right{float:right;width:200px;}
@@ -220,47 +238,65 @@
             -ms-user-select: none;
             user-select: none;
         }
+        .button {
+            width:400px;
+            height:100px;
+            margin:0px auto 15px auto;
+            background: #EEE;
+            text-align: center;
+            line-height: 135px;
+            border-radius: 5px;
+        }
+        .button:last-child {
+            margin:0px auto 0px auto;
+        }
+        .button img {
+            max-width:230px;
+            max-height:42px;
+        }
         .center-div {
-          position: absolute;
-          margin: auto;
-          top: 0;
-          right: 0;
-          bottom: 0;
-          left: 0;
-          width: 200px;
-          height: 200px;
+            text-align: center;
+            margin-top: 150px;
         }
     </style>
   </head>
-  <body bgcolor="black" class="noselect">
+  <body class="noselect">
     <div id="container">
-      <div id="left" style="color: #ffffff">Balance <span id="currentBalance" onClick="testIncrement()"></span></div>
-      <div id="right" align="right" style="color: #ffffff">Please Insert USD</div>
+      <div id="left">Balance <span id="currentBalance" onClick="testIncrement()"></span></div>
+      <div id="right" align="right">Please Insert USD</div>
     </div><br /><br />
-    <div id="selectCoin" style="color: #ffffff">
-      <div align="center">Please Select What You Would Like to Purchase</div><br />
-      <div align="center"><img src="images/bitcoin.png" height="100" onClick="selectCoin('bitcoin')"></img></div>
-      <div align="center"><img src="images/litecoin.png" height="100" onClick="selectCoin('litecoin')"></img></div>
-      <div align="center"><img src="images/dogecoin2.png" height="100" onClick="selectCoin('dogecoin')"></img></div>
+    <div id="selectCoin">
+      <h1>Select A Currency To Purchase</h1><br />
+      <div class="button" onClick="selectCoin('bitcoin')"><img src="images/bitcoin_logo.png"></div>
+      <div class="button" onClick="selectCoin('litecoin')"><img src="images/litecoin_logo.png"></div>
+      <div class="button" onClick="selectCoin('dogecoin')"><img src="images/dogecoin_logo.png"></div>
     </div>
     <div id="loading" class="center-div">
-      <img src="images/loading.gif"></img>
+      <img src="images/loading.gif">
     </div>
-    <div id="coinInfo" style="color: #ffffff">
+    <div id="coinInfo">
+        <br><br>
       <div align="center">You Have Selected <strong><span id="coinSelected"></span></strong> Current Price is: <span id="currentPrice"></span></div>
       <div align="center">At the current trading price you could buy <span id="amount_per"></amount> bitcoin</div>
-      <div id="buynow" class="center-div"><img src="images/buy.png" width="200" onClick="buyNow()"></img><img src="images/cancel.png" width="200" onClick="mainScreen()"></img></div>
-      <div id="cancelonly" class="center-div"><img src="images/cancel.png" width="200" onClick="mainScreen()"></img></div>
+          <br><br>
+      <div id="buynow">
+           <div class="button" onClick="buyNow()"><img src="images/continue.png"></div>
+           <div class="button" onClick="mainScreen()"><img src="images/cancel.png"></div>
+       </div>
+      <div id="cancelonly" class="button" onClick="mainScreen()"><img src="images/cancel.png"></div>
     </div>
-    <div id="getQR" style="color: #ffffff">
-      <div align="center">Please Scan Your QR Code</div>
-      <center><div id="reader" style="width:300px;height:250px" onClick="stop()"></div></center>
-      <div align="center"><img src="images/cancel.png" width="200" onClick="mainScreen()"></div>
+    <div id="getQR">
+      <div align="center"><strong>Please Scan Your QR Code</strong></div>
+      <center><div id="reader" style="width:300px;height:250px; border:2px solid #FFF; margin:8px auto 10px auto;" onClick="stop()"></div></center>
+      <div class="button" onClick="mainScreen()"><img src="images/cancel.png"></div>
     </div>
-    <div id="gotQR" style="color: #ffffff">
-      <div align="center">Your QR Code is: <span id="qrcode"></span></div>
-        <div id="reallybuynow" class="center-div"><img src="images/buy.png" width="200" onClick="completePurchase()"></img> <img src="images/cancel.png" width="200" onClick="mainScreen()"></img></div>
+    <div id="gotQR">
+      <div align="center">Your QR Code is: <strong><span id="qrcode"></span><strong></div>
+        <div id="reallybuynow">
+            <br><br>
+            <div class="button" onClick="completePurchase()"><img src="images/purchase.png"></div>
+            <div class="button" onClick="mainScreen()"><img src="images/cancel.png"></div>
     </div>
-    <div align="center" id="completed" style="color: #ffffff"><strong>The Transaction is complete!</strong></div>
+    <div align="center" id="completed"><br><br><h1>The Transaction is complete!</h1></div>
   </body>
 </html>
