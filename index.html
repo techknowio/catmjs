@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="jquery-1.11.3.min.js"></script>
+    <script src="accounting.min.js"></script>
+    <script src="html5-qrcode.js"></script>
+    <script src="jsqrcode-combined.min.js"></script>
+    <script>
+
+
+      var ticker;
+      var recent;
+      var selCoin;
+      var qrcode;
+      var payurl="bitcoin-test.catm.io";
+      paykey="1cdbb159-0d61-42df-9d4c-0785416f1cda";
+      var com;
+      var curAmount;
+      var stopper;
+      function reset() {
+        $( "#coinInfo" ).hide();
+        $( "#loading" ).hide();
+        $( "#selectCoin" ).show();
+        $( "#getQR" ).hide();
+        $( "#gotQR" ).hide();
+        $( "#complete" ).hide();
+        $( "#right").show();
+        currentBalance = 0
+        $("#currentBalance").html(accounting.formatMoney(currentBalance));
+      }
+      function mainScreen() {
+        try {
+          $('#reader').html5_qrcode_stop();
+        } catch(err) {
+          console.log("Video Not On");
+        }
+        clearInterval(ticker);
+        sleep(1000);
+        $( "#coinInfo" ).hide();
+        $( "#loading" ).hide();
+        $( "#selectCoin" ).show();
+        $( "#getQR" ).hide();
+        $( "#gotQR" ).hide();
+        $( "#complete" ).hide();
+        $("#currentBalance").html(accounting.formatMoney(currentBalance));
+      }
+      $( document ).ready(function() {
+        //readNow();
+          reset();
+          $( "#completed" ).hide();
+          //setInterval(checkBalance,1000);
+      });
+
+      function checkBalance() {
+        if (curAmount > 0) {
+          $( "#right").hide();
+        } else {
+          $( "#right").show();
+        }
+      }
+
+      function testIncrement() {
+          currentBalance = currentBalance + 1;
+          $("#currentBalance").html(accounting.formatMoney(currentBalance));
+          balanceUP();
+      }
+
+      function selectCoin(coin) {
+          $( "#selectCoin" ).hide();
+          $( "#coinSelected" ).text(capital(coin));
+          selCoin=coin;
+          //getcoinprice
+          //https://blockchain.info/ticker
+          //show loading on the screen
+          $( "#loading" ).show();
+          if (coin == "bitcoin") {
+            getCoinPriceBTC(true);
+            ticker = setInterval(function(){ getCoinPriceBTC(false) }, 3000);
+          }
+      }
+      function getCoinPriceBTC(firstload) {
+        $.get( "https://blockchain.info/ticker", function( data ) {
+          usd = data.USD.last;
+          recent = data.USD.last;
+          orig_usd = usd;
+          usd = (usd * .01);
+          amount_per = orig_usd - usd;
+          total = currentBalance/amount_per;
+          total = total - 0.00001000;
+          if (total < 0) {
+            total = 0;
+          }
+          curAmount = total;
+          $("#amount_per").text(accounting.formatMoney(total,"$",8));
+          $("#currentPrice").text(accounting.formatMoney(data.USD.last));
+          if (!firstload) {
+            $( "#loading" ).hide();
+            if (currentBalance <=0) {
+              $( "#buynow" ).hide();
+              $( "#cancelonly" ).show();
+            }
+            $( "#coinInfo" ).show();
+          }
+        });
+      }
+      function balanceUP() {
+        if (currentBalance > 0) {
+          $("#right").hide();
+        } else {
+          $("#right").show();
+        }
+        //console.log(recent);
+        usd = recent;
+        orig_usd = recent;
+        usd = (usd * .01);
+        amount_per = orig_usd - usd;
+        total = currentBalance/amount_per;
+        total = total - 0.00001000;
+        if (total < 0) {
+          total = 0;
+        }
+        curAmount = total;
+        $("#amount_per").text(accounting.formatMoney(total,"$",8));
+        if (currentBalance >0) {
+          $( "#buynow" ).show();
+          $( "#cancelonly" ).hide();
+        }
+      }
+      function capital(string) {
+          return string.charAt(0).toUpperCase() + string.slice(1);
+      }
+      function buyNow() {
+        $("#coinInfo").hide();
+        clearInterval(ticker);
+        //let some cleanup happen
+        sleep(1000);
+        //hide shit.
+        $("#coinInfo").hide();
+        $("#getQR").show();
+        console.log("Buying " + selCoin);
+        readNow();
+      }
+      function stopReading() {
+        console.log("Stop");
+        $('#reader').html5_qrcode_stop();
+        clearInterval(stopper);
+      }
+      function stop() {
+        //stopReading();
+      }
+      function readNow() {
+        reading = 1;
+        $('#reader').html5_qrcode(function(qrdata){
+           // do something when code is read
+           //alert(data);
+           qr = qrdata;
+           console.log(qrdata);
+           $("#getQR").hide();
+           var res = qr.split(":");
+           $("#qrcode").text(res[1]);
+           $("#gotQR").show();
+           stopper = setInterval(function(){stopReading()}, 100);
+      },
+      function(error){
+          //show read errors
+          console.log("Err: " + error);
+      }, function(videoError){
+          //the video stream could be opened
+          console.log("vErr: " + videoError);
+      });
+    }
+
+      function hideCompleted() {
+        $("#completed").hide();
+        $("#container").show();
+        clearInterval(com);
+        reset();
+      }
+      function showCompleted() {
+        console.log("SHowing!");
+        //let's hide the containter too
+        $("#container").hide();
+        $("#completed").show();
+        com = setInterval(function(){hideCompleted()}, 5000);
+      }
+      function completePurchase() {
+        $('#reader').html5_qrcode_stop();
+        //override qr code for now
+        qrcode="2NAqo6t124UY3Kg5acGPzDDnJGSmsULtg14";
+        url="https://"+payurl+"/api.php?key="+paykey+"&command=sendFrom&qr="+qrcode+"&amount="+curAmount+"&type="+selCoin;
+        $.get( url, function( data ) {
+            $("#gotQR").hide();
+            showCompleted();
+        });
+      }
+      function sleep(milliseconds) {
+        var start = new Date().getTime();
+        for (var i = 0; i < 1e7; i++) {
+          if ((new Date().getTime() - start) > milliseconds){
+            break;
+          }
+        }
+      }
+
+
+
+
+    </script>
+    <title>Coin ATM</title>
+    <style>
+        #container{width:100%;}
+        #left{float:left;width:200px;}
+        #right{float:right;width:200px;}
+        #center{margin:0 auto;width:100px;}
+        .noselect {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .center-div {
+          position: absolute;
+          margin: auto;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          width: 200px;
+          height: 200px;
+        }
+    </style>
+  </head>
+  <body bgcolor="black" class="noselect">
+    <div id="container">
+      <div id="left" style="color: #ffffff">Balance <span id="currentBalance" onClick="testIncrement()"></span></div>
+      <div id="right" align="right" style="color: #ffffff">Please Insert USD</div>
+    </div><br /><br />
+    <div id="selectCoin" style="color: #ffffff">
+      <div align="center">Please Select What You Would Like to Purchase</div><br />
+      <div align="center"><img src="images/bitcoin.png" height="100" onClick="selectCoin('bitcoin')"></img></div>
+      <div align="center"><img src="images/litecoin.png" height="100" onClick="selectCoin('litecoin')"></img></div>
+      <div align="center"><img src="images/dogecoin2.png" height="100" onClick="selectCoin('dogecoin')"></img></div>
+    </div>
+    <div id="loading" class="center-div">
+      <img src="images/loading.gif"></img>
+    </div>
+    <div id="coinInfo" style="color: #ffffff">
+      <div align="center">You Have Selected <strong><span id="coinSelected"></span></strong> Current Price is: <span id="currentPrice"></span></div>
+      <div align="center">At the current trading price you could buy <span id="amount_per"></amount> bitcoin</div>
+      <div id="buynow" class="center-div"><img src="images/buy.png" width="200" onClick="buyNow()"></img><img src="images/cancel.png" width="200" onClick="mainScreen()"></img></div>
+      <div id="cancelonly" class="center-div"><img src="images/cancel.png" width="200" onClick="mainScreen()"></img></div>
+    </div>
+    <div id="getQR" style="color: #ffffff">
+      <div align="center">Please Scan Your QR Code</div>
+      <center><div id="reader" style="width:300px;height:250px" onClick="stop()"></div></center>
+      <div align="center"><img src="images/cancel.png" width="200" onClick="mainScreen()"></div>
+    </div>
+    <div id="gotQR" style="color: #ffffff">
+      <div align="center">Your QR Code is: <span id="qrcode"></span></div>
+        <div id="reallybuynow" class="center-div"><img src="images/buy.png" width="200" onClick="completePurchase()"></img> <img src="images/cancel.png" width="200" onClick="mainScreen()"></img></div>
+    </div>
+    <div align="center" id="completed" style="color: #ffffff"><strong>The Transaction is complete!</strong></div>
+  </body>
+</html>
