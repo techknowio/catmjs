@@ -3,10 +3,25 @@
   <head>
     <script src="jquery-1.11.3.min.js"></script>
     <script src="accounting.min.js"></script>
-    <script src="html5-qrcode.js"></script>
     <script src="jsqrcode-combined.min.js"></script>
+    <script src="html5-qrcode.js"></script>
     <script>
+      currentBalance = 1
 
+      var serialport = require('serialport');
+      var SerialPort = serialport.SerialPort;
+      var sp = new SerialPort("/dev/ttyACM0", {
+        baudrate: 9600,
+        parser: serialport.parsers.readline('\r\n')
+      });
+      sp.on("open", function () {
+        console.log('open');
+        sp.on('data', function(data) {
+            currentBalance = currentBalance + data;
+            $("#currentBalance").html(accounting.formatMoney(currentBalance));
+            balanceUP();
+        });
+     });
 
       var ticker;
       var recent;
@@ -25,8 +40,9 @@
         $( "#gotQR" ).hide();
         $( "#complete" ).hide();
         $( "#right").show();
-        currentBalance = 0
+        currentBalance=0;
         $("#currentBalance").html(accounting.formatMoney(currentBalance));
+        balanceUP();
       }
       function mainScreen() {
         try {
@@ -45,7 +61,6 @@
         $("#currentBalance").html(accounting.formatMoney(currentBalance));
       }
       $( document ).ready(function() {
-        //readNow();
           reset();
           $( "#completed" ).hide();
           //setInterval(checkBalance,1000);
@@ -57,12 +72,6 @@
         } else {
           $( "#right").show();
         }
-      }
-
-      function testIncrement() {
-          currentBalance = currentBalance + 1;
-          $("#currentBalance").html(accounting.formatMoney(currentBalance));
-          balanceUP();
       }
 
       function selectCoin(coin) {
@@ -77,7 +86,41 @@
             getCoinPriceBTC(true);
             ticker = setInterval(function(){ getCoinPriceBTC(false) }, 3000);
           }
+          if (coin == "litecoin") {
+            getCoinPriceLTC(true);
+            ticker = setInterval(function(){ getCoinPriceLTC(false) }, 3000);
+          }
+          if (coin == "dogecoin") {
+            getCoinPriceDoge(true);
+            ticker = setInterval(function(){ getCoinPriceDoge(false) }, 3000);
+          }
       }
+      function getCoinPriceDoge(firstload) {
+        $.get( "http://data.bter.com/api/1/ticker/doge_usd", function( data ) {
+          usd = data["avg"];
+          recent = data["avg"];
+          orig_usd = usd;
+          usd = (usd * .01);
+          amount_per = orig_usd - usd;
+          total = currentBalance/amount_per;
+          total = total - 0.00001000;
+          if (total < 0) {
+            total = 0;
+          }
+          curAmount = total;
+          $("#amount_per").text(accounting.formatMoney(total,"$",8));
+          $("#currentPrice").text(accounting.formatMoney(data["avg"],"$",8));
+          if (!firstload) {
+            $( "#loading" ).hide();
+            if (currentBalance <=0) {
+              $( "#buynow" ).hide();
+              $( "#cancelonly" ).show();
+            }
+            $( "#coinInfo" ).show();
+          }
+        });
+      }
+
       function getCoinPriceBTC(firstload) {
         $.get( "https://blockchain.info/ticker", function( data ) {
           usd = data.USD.last;
@@ -93,6 +136,33 @@
           curAmount = total;
           $("#amount_per").text(accounting.formatMoney(total,"$",8));
           $("#currentPrice").text(accounting.formatMoney(data.USD.last));
+          if (!firstload) {
+            $( "#loading" ).hide();
+            if (currentBalance <=0) {
+              $( "#buynow" ).hide();
+              $( "#cancelonly" ).show();
+            }
+            $( "#coinInfo" ).show();
+          }
+        });
+      }
+
+      function getCoinPriceLTC(firstload) {
+        $.getJSON( "https://btc-e.com/api/3/ticker/ltc_usd", function( data ) {
+          var json = data;
+          usd = json["ltc_usd"]["avg"];
+          recent = json["ltc_usd"]["avg"];
+          orig_usd = usd;
+          usd = (usd * .01);
+          amount_per = orig_usd - usd;
+          total = currentBalance/amount_per;
+          total = total - 0.00001000;
+          if (total < 0) {
+            total = 0;
+          }
+          curAmount = total;
+          $("#amount_per").text(accounting.formatMoney(total,"$",8));
+          $("#currentPrice").text(accounting.formatMoney(json["ltc_usd"]["avg"]));
           if (!firstload) {
             $( "#loading" ).hide();
             if (currentBalance <=0) {
@@ -145,16 +215,13 @@
         $('#reader').html5_qrcode_stop();
         clearInterval(stopper);
       }
-      function stop() {
-        //stopReading();
-      }
       function readNow() {
         reading = 1;
         $('#reader').html5_qrcode(function(qrdata){
+            console.log("Starting Read");
            // do something when code is read
            //alert(data);
            qr = qrdata;
-           console.log(qrdata);
            $("#getQR").hide();
            var res = qr.split(":");
            $("#qrcode").text(res[1]);
@@ -162,30 +229,26 @@
            stopper = setInterval(function(){stopReading()}, 100);
       },
       function(error){
-          //show read errors
           console.log("Err: " + error);
       }, function(videoError){
-          //the video stream could be opened
           console.log("vErr: " + videoError);
       });
     }
 
       function hideCompleted() {
         $("#completed").hide();
-        $("#container").show();
+        //$("#container").show();
         clearInterval(com);
-        reset();
+        //reset();
+        location.reload();
       }
       function showCompleted() {
-        console.log("SHowing!");
         //let's hide the containter too
         $("#container").hide();
         $("#completed").show();
         com = setInterval(function(){hideCompleted()}, 5000);
       }
       function completePurchase() {
-        $('#reader').html5_qrcode_stop();
-        //override qr code for now
         qrcode="2NAqo6t124UY3Kg5acGPzDDnJGSmsULtg14";
         url="https://"+payurl+"/api.php?key="+paykey+"&command=sendFrom&qr="+qrcode+"&amount="+curAmount+"&type="+selCoin;
         $.get( url, function( data ) {
@@ -261,8 +324,9 @@
     </style>
   </head>
   <body class="noselect">
+    <div align="center" id="completed">The Transaction is complete!</div>
     <div id="container">
-      <div id="left">Balance <span id="currentBalance" onClick="testIncrement()"></span></div>
+      <div id="left">Balance <span id="currentBalance"></span></div>
       <div id="right" align="right">Please Insert USD</div>
     </div><br /><br />
     <div id="selectCoin">
@@ -297,6 +361,6 @@
             <div class="button" onClick="completePurchase()"><img src="images/purchase.png"></div>
             <div class="button" onClick="mainScreen()"><img src="images/cancel.png"></div>
     </div>
-    <div align="center" id="completed"><br><br><h1>The Transaction is complete!</h1></div>
+
   </body>
 </html>
