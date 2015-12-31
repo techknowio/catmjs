@@ -17,7 +17,7 @@
       sp.on("open", function () {
         console.log('open');
         sp.on('data', function(data) {
-            currentBalance = currentBalance + data;
+            currentBalance = parseInt(currentBalance) + parseInt(data);
             $("#currentBalance").html(accounting.formatMoney(currentBalance));
             balanceUP();
         });
@@ -27,7 +27,8 @@
       var recent;
       var selCoin;
       var qrcode;
-      var payurl="bitcoin-test.catm.io";
+      var bitcoinpayurl="bitcoin-test.catm.io";
+      var altcoinpayurl="bitcoin-test.catm.io";
       paykey="1cdbb159-0d61-42df-9d4c-0785416f1cda";
       var com;
       var curAmount;
@@ -250,7 +251,11 @@
       }
       function completePurchase() {
         qrcode="2NAqo6t124UY3Kg5acGPzDDnJGSmsULtg14";
-        url="https://"+payurl+"/api.php?key="+paykey+"&command=sendFrom&qr="+qrcode+"&amount="+curAmount+"&type="+selCoin;
+        if (selCoin == "bitcoin") {
+            url="https://"+bitcoinpayurl+"/api.php?key="+paykey+"&command=sendFrom&qr="+qrcode+"&amount="+curAmount+"&type="+selCoin;
+        } else {
+            url="https://"+altcoinpayurl+"/api.php?key="+paykey+"&command=sendFrom&qr="+qrcode+"&amount="+curAmount+"&type="+selCoin;
+        }
         $.get( url, function( data ) {
             $("#gotQR").hide();
             showCompleted();
