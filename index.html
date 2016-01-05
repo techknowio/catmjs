@@ -7,7 +7,7 @@
     <script src="html5-qrcode.js"></script>
     <script>
       currentBalance = 1
-
+      
       var serialport = require('serialport');
       var SerialPort = serialport.SerialPort;
       var sp = new SerialPort("/dev/ttyACM0", {
@@ -73,6 +73,10 @@
         } else {
           $( "#right").show();
         }
+      }
+
+      function printWallet(coin) {
+          alert("Printing You A "+coin.toUpperCase()+" Wallet! Please Wait...");
       }
 
       function selectCoin(coin) {
@@ -308,19 +312,19 @@
         }
         .button {
             width:400px;
-            height:100px;
+            height:70px;
             margin:0px auto 15px auto;
             background: #EEE;
             text-align: center;
-            line-height: 135px;
+            line-height: 110px;
             border-radius: 5px;
         }
         .button:last-child {
             margin:0px auto 0px auto;
         }
         .button img {
-            max-width:230px;
-            max-height:42px;
+            max-width:260px;
+            max-height:60px;
         }
         .center-div {
             text-align: center;
@@ -339,6 +343,7 @@
       <div class="button" onClick="selectCoin('bitcoin')"><img src="images/bitcoin_logo.png"></div>
       <div class="button" onClick="selectCoin('litecoin')"><img src="images/litecoin_logo.png"></div>
       <div class="button" onClick="selectCoin('dogecoin')"><img src="images/dogecoin_logo.png"></div>
+      <div class="button" onClick="printWallet('bitcoin');"><img src="images/wallet_logo.png"></div>
     </div>
     <div id="loading" class="center-div">
       <img src="images/loading.gif">
