@@ -7,7 +7,6 @@
     <script src="html5-qrcode.js"></script>
     <script>
       currentBalance = 1
-      
       var serialport = require('serialport');
       var SerialPort = serialport.SerialPort;
       var sp = new SerialPort("/dev/ttyACM0", {
@@ -25,11 +24,12 @@
 
       var ticker;
       var recent;
+      var markup;
       var selCoin;
       var qrcode;
-      var bitcoinpayurl="bitcoin-test.catm.io";
-      var altcoinpayurl="bitcoin-test.catm.io";
-      paykey="1cdbb159-0d61-42df-9d4c-0785416f1cda";
+      var bitcoinpayurl="<Your BitCoin Pay Address Here>";
+      var altcoinpayurl="<Your Altcoin Pay Address Here>";
+      paykey="<Put Pay Key Here From Your Server>";
       var com;
       var curAmount;
       var stopper;
@@ -40,7 +40,8 @@
         $( "#getQR" ).hide();
         $( "#gotQR" ).hide();
         $( "#complete" ).hide();
-        $( "#right").show();
+        $( "#allsettings" ).hide();
+        $( "#right" ).show();
         currentBalance=0;
         $("#currentBalance").html(accounting.formatMoney(currentBalance));
         balanceUP();
@@ -48,17 +49,20 @@
       function mainScreen() {
         try {
           $('#reader').html5_qrcode_stop();
+           $('#qr-canvas').remove();
+           $('#video').remove();
         } catch(err) {
           console.log("Video Not On");
         }
         clearInterval(ticker);
-        sleep(1000);
+        //sleep(1000);
         $( "#coinInfo" ).hide();
         $( "#loading" ).hide();
         $( "#selectCoin" ).show();
         $( "#getQR" ).hide();
         $( "#gotQR" ).hide();
         $( "#complete" ).hide();
+        $( "#allsettings" ).hide();
         $("#currentBalance").html(accounting.formatMoney(currentBalance));
       }
       $( document ).ready(function() {
@@ -76,7 +80,16 @@
       }
 
       function printWallet(coin) {
-          alert("Printing You A "+coin.toUpperCase()+" Wallet! Please Wait...");
+        var sys = require('sys')
+        var exec = require('child_process').exec;
+        var child;
+        child = exec("gen.sh", function (error, stdout, stderr) {
+            sys.print('stdout: ' + stdout);
+            sys.print('stderr: ' + stderr);
+            if (error !== null) {
+                console.log('exec error: ' + error);
+            }
+        });
       }
 
       function selectCoin(coin) {
@@ -106,7 +119,7 @@
           recent = data["avg"];
           orig_usd = usd;
           usd = (usd * .01);
-          amount_per = orig_usd - usd;
+          amount_per =  Math.round((usd * .01)*100/100) + usd;
           total = currentBalance/amount_per;
           total = total - 0.00001000;
           if (total < 0) {
@@ -114,7 +127,7 @@
           }
           curAmount = total;
           $("#amount_per").text(accounting.formatMoney(total,"$",8));
-          $("#currentPrice").text(accounting.formatMoney(data["avg"],"$",8));
+          $("#currentPrice").text(accounting.formatMoney(amount_per,"$",8));
           if (!firstload) {
             $( "#loading" ).hide();
             if (currentBalance <=0) {
@@ -132,15 +145,17 @@
           recent = data.USD.last;
           orig_usd = usd;
           usd = (usd * .01);
-          amount_per = orig_usd - usd;
+          amount_per =  Math.round((data.USD.last * .01)*100/100) + data.USD.last;
+          //amount_per = orig_usd - usd;
           total = currentBalance/amount_per;
           total = total - 0.00001000;
           if (total < 0) {
             total = 0;
           }
           curAmount = total;
+
           $("#amount_per").text(accounting.formatMoney(total,"$",8));
-          $("#currentPrice").text(accounting.formatMoney(data.USD.last));
+          $("#currentPrice").text(accounting.formatMoney(amount_per));
           if (!firstload) {
             $( "#loading" ).hide();
             if (currentBalance <=0) {
@@ -159,7 +174,7 @@
           recent = json["ltc_usd"]["avg"];
           orig_usd = usd;
           usd = (usd * .01);
-          amount_per = orig_usd - usd;
+          amount_per =  Math.round((usd * .01)*100/100) + usd;
           total = currentBalance/amount_per;
           total = total - 0.00001000;
           if (total < 0) {
@@ -167,7 +182,7 @@
           }
           curAmount = total;
           $("#amount_per").text(accounting.formatMoney(total,"$",8));
-          $("#currentPrice").text(accounting.formatMoney(json["ltc_usd"]["avg"]));
+          $("#currentPrice").text(accounting.formatMoney(amount_per));
           if (!firstload) {
             $( "#loading" ).hide();
             if (currentBalance <=0) {
@@ -185,9 +200,9 @@
           $("#right").show();
         }
         //console.log(recent);
-        usd = recent;
-        orig_usd = recent;
-        usd = (usd * .01);
+        usd = markup;
+        orig_usd = markup;
+        usd = (usd * .10);
         amount_per = orig_usd - usd;
         total = currentBalance/amount_per;
         total = total - 0.00001000;
@@ -208,7 +223,7 @@
         $("#coinInfo").hide();
         clearInterval(ticker);
         //let some cleanup happen
-        sleep(1000);
+        //sleep(1000);
         //hide shit.
         $("#coinInfo").hide();
         $("#getQR").show();
@@ -220,16 +235,41 @@
         $('#reader').html5_qrcode_stop();
         clearInterval(stopper);
       }
+      function settings() {
+  var os = require('os');
+  var ifaces = os.networkInterfaces();
+  var addresses = "";
+  Object.keys(ifaces).forEach(function (ifname) {
+      var alias = 0;
+      ifaces[ifname].forEach(function (iface) {
+        if ('IPv4' !== iface.family || iface.internal !== false) {
+      return;
+    }
+    if (alias >= 1) {
+      addresses += ifname + ':' + alias + iface.address + "<br />";
+    } else {
+      addresses += ifname + ' ' + iface.address + "<br />";
+    }
+    ++alias;
+      });
+  
+  });
+        $("#ipaddress").html(addresses);  
+        clearInterval(ticker);
+        $( "#selectCoin" ).hide();
+        $( "#allsettings" ).show();
+      }
       function readNow() {
         reading = 1;
         $('#reader').html5_qrcode(function(qrdata){
-            console.log("Starting Read");
-           // do something when code is read
-           //alert(data);
+           console.log("Starting Read: " + qrdata);
            qr = qrdata;
            $("#getQR").hide();
+           
            var res = qr.split(":");
-           $("#qrcode").text(res[1]);
+           console.log("Res[0]: " + res[0] +" Res[1]:" +res[1] + " QR:" + qr);
+           $("#tqrcode").text(res[1]);
+           tqrcode=res[1];
            $("#gotQR").show();
            stopper = setInterval(function(){stopReading()}, 100);
       },
@@ -254,16 +294,21 @@
         com = setInterval(function(){hideCompleted()}, 5000);
       }
       function completePurchase() {
-        qrcode="2NAqo6t124UY3Kg5acGPzDDnJGSmsULtg14";
+        //qrcode="2NAqo6t124UY3Kg5acGPzDDnJGSmsULtg14";
         if (selCoin == "bitcoin") {
-            url="https://"+bitcoinpayurl+"/api.php?key="+paykey+"&command=sendFrom&qr="+qrcode+"&amount="+curAmount+"&type="+selCoin;
+            url="https://"+bitcoinpayurl+"/api.php?key="+paykey+"&command=sendFrom&qr="+tqrcode+"&amount="+curAmount+"&type="+selCoin;
         } else {
-            url="https://"+altcoinpayurl+"/api.php?key="+paykey+"&command=sendFrom&qr="+qrcode+"&amount="+curAmount+"&type="+selCoin;
+            url="https://"+altcoinpayurl+"/api.php?key="+paykey+"&command=sendFrom&qr="+tqrcode+"&amount="+curAmount+"&type="+selCoin;
         }
         $.get( url, function( data ) {
             $("#gotQR").hide();
             showCompleted();
         });
+        console.log("https://"+bitcoinpayurl+"/api.php?key="+paykey+"&command=sendFrom&qr="+tqrcode+"&amount="+curAmount+"&type="+selCoin);
+        //$("#gotQR").hide();
+        //showCompleted();
+
+
       }
       function sleep(milliseconds) {
         var start = new Date().getTime();
@@ -343,7 +388,16 @@
       <div class="button" onClick="selectCoin('bitcoin')"><img src="images/bitcoin_logo.png"></div>
       <div class="button" onClick="selectCoin('litecoin')"><img src="images/litecoin_logo.png"></div>
       <div class="button" onClick="selectCoin('dogecoin')"><img src="images/dogecoin_logo.png"></div>
-      <div class="button" onClick="printWallet('bitcoin');"><img src="images/wallet_logo.png"></div>
+      <div style="position:absolute;bottom:0;right:0;" onClick="settings()"><img src="images/gear.png"></div> 
+      <!--<div class="button" onClick="scanCode();">Scan Code</div>-->
+      <!--<div class="button" onClick="printWallet('bitcoin');"><img src="images/wallet_logo.png"></div>-->
+    </div>
+    <div id="allsettings">
+           <div align="center">Settings</div>            
+     <div align="center">IP Address</div>
+     <div align="center" id="ipaddress"></div>
+     <br />
+           <div class="button" onClick="mainScreen()"><img src="images/cancel.png"></div>
     </div>
     <div id="loading" class="center-div">
       <img src="images/loading.gif">
@@ -365,7 +419,7 @@
       <div class="button" onClick="mainScreen()"><img src="images/cancel.png"></div>
     </div>
     <div id="gotQR">
-      <div align="center">Your QR Code is: <strong><span id="qrcode"></span><strong></div>
+      <div align="center">Your QR Code is: <strong><span id="tqrcode"></span><strong></div>
         <div id="reallybuynow">
             <br><br>
             <div class="button" onClick="completePurchase()"><img src="images/purchase.png"></div>

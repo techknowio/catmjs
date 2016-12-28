@@ -1,48 +1,8 @@
 (function($) {
-    var cameraIds = [];
-
-    /**
-     * Code to initialise the cameraIds field
-     */
-    function gotSources(sourceInfos) {
-        for (var i = 0; i !== sourceInfos.length; ++i) {
-            var sourceInfo = sourceInfos[i];
-            if (sourceInfo.kind === 'video') {
-                cameraIds.push(sourceInfo.id);
-            }
-        }
-    }
-
-    if (typeof MediaStreamTrack === 'undefined' ||
-        typeof MediaStreamTrack.getSources === 'undefined') {
-        console.log('This browser does not support MediaStreamTrack.\n\nTry Chrome.');
-    } else {
-        MediaStreamTrack.getSources(gotSources);
-    }
-
     jQuery.fn.extend({
-        /**
-         * jQuery method, 
-         * @param: qrcodeSuccess (function) - callback on success
-         * @param: qrcodeError (function) - callback on qr error
-         * @param: videoError (function) - callback on video error
-         * @param: camera (int) - which camera to use
-         */
-        html5_qrcode: function(qrcodeSuccess, qrcodeError, videoError, camera) {
+        html5_qrcode: function(qrcodeSuccess, qrcodeError, videoError) {
             return this.each(function() {
-
                 var currentElem = $(this);
-
-                $.data(currentElem[0], "qrcodeSuccess", qrcodeSuccess);
-                $.data(currentElem[0], "qrcodeError", qrcodeError);
-                $.data(currentElem[0], "videoError", videoError);
-
-                if (typeof camera != 'undefined' && typeof cameraIds[camera] != 'undefined')
-                    $.data(currentElem[0], "sourceId", camera);
-                else $.data(currentElem[0], "sourceId", 0);
-
-                if (typeof cameraIds[currentElem.data('sourceId')] != 'undefined')
-                    $.data(currentElem[0], "cameraId", cameraIds[currentElem.data('sourceId')] );
 
                 var height = currentElem.height();
                 var width = currentElem.width();
@@ -55,7 +15,7 @@
                     width = 300;
                 }
 
-                var vidElem = $('<video width="' + width + 'px" height="' + height + 'px"></video>').appendTo(currentElem);
+                var vidElem = $('<video id="video" width="' + width + 'px" height="' + height + 'px"></video>').appendTo(currentElem);
                 var canvasElem = $('<canvas id="qr-canvas" width="' + (width - 2) + 'px" height="' + (height - 2) + 'px" style="display:none;"></canvas>').appendTo(currentElem);
 
                 var video = vidElem[0];
@@ -94,20 +54,8 @@
 
                 // Call the getUserMedia method with our callback functions
                 if (navigator.getUserMedia) {
-                    var config = {video: true};
-                    if (typeof currentElem.data("cameraId") != 'undefined') {
-                        config = {
-                            video: {
-                              optional: [{
-                                sourceId: currentElem.data("cameraId")
-                              }]
-                            }
-                          };
-                    }
-
-                    navigator.getUserMedia(config, successCallback, function(error) {
-                        if (typeof videoError == 'function') videoError(error, localMediaStream);
-                        else console.log('Error callback is undefined or not a function.');
+                    navigator.getUserMedia({video: true}, successCallback, function(error) {
+                        videoError(error, localMediaStream);
                     });
                 } else {
                     console.log('Native web camera streaming (getUserMedia) not supported in this browser.');
@@ -115,9 +63,7 @@
                 }
 
                 qrcode.callback = function (result) {
-                    if (typeof qrcodeSuccess == 'function')
-                        qrcodeSuccess(result, localMediaStream);
-                    else console.log('Success callback is undefined or not a function.');
+                    qrcodeSuccess(result, localMediaStream);
                 };
             }); // end of html5_qrcode
         },
@@ -128,26 +74,8 @@
                     videoTrack.stop();
                 });
 
-                $(this).children('video').remove();
-                $(this).children('canvas').remove();
-
                 clearTimeout($(this).data('timeout'));
             });
-        },
-        html5_qrcode_changeCamera: function() {
-            return this.each(function() {
-                //stop the stream and cancel timeouts
-                $(this).html5_qrcode_stop();
-                $(this).html5_qrcode(
-                    $(this).data('qrcodeSuccess'),
-                    $(this).data('qrcodeError'),
-                    $(this).data('videoError'),
-                    ($(this).data('sourceId') + 1) % cameraIds.length
-                );
-            });
-        },
-        html5_qrcode_cameraCount: function() {
-            return cameraIds.length;
         }
     });
 })(jQuery);
