@@ -6,7 +6,7 @@
     <script src="jsqrcode-combined.min.js"></script>
     <script src="html5-qrcode.js"></script>
     <script>
-      currentBalance = 1
+      currentBalance = 50;
       var serialport = require('serialport');
       var SerialPort = serialport.SerialPort;
       var sp = new SerialPort("/dev/ttyACM0", {
@@ -33,6 +33,7 @@
       var com;
       var curAmount;
       var stopper;
+
       function reset() {
         $( "#coinInfo" ).hide();
         $( "#loading" ).hide();
@@ -46,6 +47,7 @@
         $("#currentBalance").html(accounting.formatMoney(currentBalance));
         balanceUP();
       }
+
       function mainScreen() {
         try {
           $('#reader').html5_qrcode_stop();
@@ -108,11 +110,15 @@
             getCoinPriceLTC(true);
             ticker = setInterval(function(){ getCoinPriceLTC(false) }, 3000);
           }
+
+          /*
           if (coin == "dogecoin") {
             getCoinPriceDoge(true);
             ticker = setInterval(function(){ getCoinPriceDoge(false) }, 3000);
           }
+          */
       }
+
       function getCoinPriceDoge(firstload) {
         $.get( "http://data.bter.com/api/1/ticker/doge_usd", function( data ) {
           usd = data["avg"];
@@ -168,20 +174,20 @@
       }
 
       function getCoinPriceLTC(firstload) {
-        $.getJSON( "https://btc-e.com/api/3/ticker/ltc_usd", function( data ) {
+        $.getJSON( "https://api.gdax.com/products/LTC-USD/book/", function( data ) {
           var json = data;
-          usd = json["ltc_usd"]["avg"];
-          recent = json["ltc_usd"]["avg"];
+          usd = json.bids[0][0];
+          recent = json.bids[0][0];
           orig_usd = usd;
-          usd = (usd * .01);
-          amount_per =  Math.round((usd * .01)*100/100) + usd;
+          //usd = (usd * .01);
+          amount_per =  usd;
           total = currentBalance/amount_per;
           total = total - 0.00001000;
           if (total < 0) {
             total = 0;
           }
           curAmount = total;
-          $("#amount_per").text(accounting.formatMoney(total,"$",8));
+          $("#amount_per").text(accounting.formatMoney(total,"LTC ",8));
           $("#currentPrice").text(accounting.formatMoney(amount_per));
           if (!firstload) {
             $( "#loading" ).hide();
@@ -193,6 +199,7 @@
           }
         });
       }
+
       function balanceUP() {
         if (currentBalance > 0) {
           $("#right").hide();
@@ -252,9 +259,9 @@
     }
     ++alias;
       });
-  
+
   });
-        $("#ipaddress").html(addresses);  
+        $("#ipaddress").html(addresses);
         clearInterval(ticker);
         $( "#selectCoin" ).hide();
         $( "#allsettings" ).show();
@@ -265,7 +272,7 @@
            console.log("Starting Read: " + qrdata);
            qr = qrdata;
            $("#getQR").hide();
-           
+
            var res = qr.split(":");
            console.log("Res[0]: " + res[0] +" Res[1]:" +res[1] + " QR:" + qr);
            $("#tqrcode").text(res[1]);
@@ -388,12 +395,12 @@
       <div class="button" onClick="selectCoin('bitcoin')"><img src="images/bitcoin_logo.png"></div>
       <div class="button" onClick="selectCoin('litecoin')"><img src="images/litecoin_logo.png"></div>
       <div class="button" onClick="selectCoin('dogecoin')"><img src="images/dogecoin_logo.png"></div>
-      <div style="position:absolute;bottom:0;right:0;" onClick="settings()"><img src="images/gear.png"></div> 
+      <div style="position:absolute;bottom:0;right:0;" onClick="settings()"><img src="images/gear.png"></div>
       <!--<div class="button" onClick="scanCode();">Scan Code</div>-->
       <!--<div class="button" onClick="printWallet('bitcoin');"><img src="images/wallet_logo.png"></div>-->
     </div>
     <div id="allsettings">
-           <div align="center">Settings</div>            
+           <div align="center">Settings</div>
      <div align="center">IP Address</div>
      <div align="center" id="ipaddress"></div>
      <br />
